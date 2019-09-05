@@ -42,10 +42,19 @@ class interfaceColController extends baseController {
       for (let i = 0; i < result.length; i++) {
         result[i] = result[i].toObject();
         let caseList = await this.caseModel.list(result[i]._id);
+
+        for(let j=0; j< caseList.length; j++){
+          let item = caseList[j].toObject();
+          let interfaceData = await this.interfaceModel.getBaseinfo(item.interface_id);
+          item.path = interfaceData.path;
+          caseList[j] = item;
+        }
+
         caseList = caseList.sort((a, b) => {
           return a.index - b.index;
         });
         result[i].caseList = caseList;
+        
       }
       ctx.body = yapi.commons.resReturn(result);
     } catch (e) {
@@ -559,9 +568,9 @@ class interfaceColController extends baseController {
         return (ctx.body = yapi.commons.resReturn(null, 400, '用例id不能为空'));
       }
 
-      if (!params.casename) {
-        return (ctx.body = yapi.commons.resReturn(null, 400, '用例名称不能为空'));
-      }
+      // if (!params.casename) {
+      //   return (ctx.body = yapi.commons.resReturn(null, 400, '用例名称不能为空'));
+      // }
 
       let caseData = await this.caseModel.get(params.id);
       let auth = await this.checkAuth(caseData.project_id, 'project', 'edit');
@@ -638,6 +647,7 @@ class interfaceColController extends baseController {
       result.req_params = yapi.commons.handleParamsValue(data.req_params, result.req_params);
       result.interface_up_time = data.up_time;
       result.req_body_is_json_schema = data.req_body_is_json_schema;
+      result.res_body_is_json_schema = data.res_body_is_json_schema;
       ctx.body = yapi.commons.resReturn(result);
     } catch (e) {
       ctx.body = yapi.commons.resReturn(null, 400, e.message);
@@ -845,7 +855,7 @@ class interfaceColController extends baseController {
 
   async runCaseScript(ctx) {
     let params = ctx.request.body;
-    ctx.body = await yapi.commons.runCaseScript(params);
+    ctx.body = await yapi.commons.runCaseScript(params, params.col_id, params.interface_id, this.getUid());
   }
 
   // 数组去重

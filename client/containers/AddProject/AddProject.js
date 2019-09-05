@@ -169,8 +169,8 @@ class ProjectList extends Component {
                 rules: [
                   {
                     required: false,
-                    message: '描述不超过50字!',
-                    max: 50
+                    message: '描述不超过144字!',
+                    max: 144
                   }
                 ]
               })(<TextArea rows={4} />)}
@@ -191,10 +191,10 @@ class ProjectList extends Component {
                     <span className="radio-desc">只有组长和项目开发者可以索引并查看项目信息</span>
                   </Radio>
                   <br />
-                  <Radio value="public" className="radio">
+                  {/* <Radio value="public" className="radio">
                     <Icon type="unlock" />公开<br />
                     <span className="radio-desc">任何人都可以索引并查看项目信息</span>
-                  </Radio>
+                  </Radio> */}
                 </RadioGroup>
               )}
             </FormItem>

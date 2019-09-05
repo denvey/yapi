@@ -12,8 +12,9 @@ const userModel = require('../models/user.js');
 const logModel = require('../models/log.js');
 const followModel = require('../models/follow.js');
 const tokenModel = require('../models/token.js');
-
+const {getToken} = require('../utils/token')
 const sha = require('sha.js');
+const axios = require('axios').default;
 
 class projectController extends baseController {
   constructor(ctx) {
@@ -92,7 +93,8 @@ class projectController extends baseController {
         '*id': id
       },
       get: {
-        '*id': id
+        'id': id,
+        'project_id': id
       },
       list: {
         '*group_id': group_id
@@ -216,6 +218,7 @@ class projectController extends baseController {
       color: params.color,
       add_time: yapi.commons.time(),
       up_time: yapi.commons.time(),
+      is_json5: false,
       env: [{ name: 'local', domain: 'http://127.0.0.1' }]
     };
 
@@ -256,6 +259,7 @@ class projectController extends baseController {
       username: username,
       typeid: result._id
     });
+    yapi.emitHook('project_add', result).then();
     ctx.body = yapi.commons.resReturn(result);
   }
 
@@ -514,7 +518,8 @@ class projectController extends baseController {
 
   async get(ctx) {
     let params = ctx.params;
-    let result = await this.Model.getBaseInfo(params.id);
+    let projectId= params.id || params.project_id; // 通过 token 访问
+    let result = await this.Model.getBaseInfo(projectId);
 
     if (!result) {
       return (ctx.body = yapi.commons.resReturn(null, 400, '不存在的项目'));
@@ -533,7 +538,7 @@ class projectController extends baseController {
     }
     result.role = await this.getProjectRole(params.id, 'project');
 
-    yapi.emitHook('project_add', params.id).then();
+    yapi.emitHook('project_get', result).then();
     ctx.body = yapi.commons.resReturn(result);
   }
 
@@ -825,6 +830,7 @@ class projectController extends baseController {
         username: username,
         typeid: id
       });
+      yapi.emitHook('project_up', result).then();
       ctx.body = yapi.commons.resReturn(result);
     } catch (e) {
       ctx.body = yapi.commons.resReturn(null, 402, e.message);
@@ -889,6 +895,58 @@ class projectController extends baseController {
   }
 
   /**
+   * 编辑项目
+   * @interface /project/up_tag
+   * @method POST
+   * @category project
+   * @foldnumber 10
+   * @param {Number} id 项目id，不能为空
+   * @param {Array} [tag] 项目tag配置
+   * @param {String} [tag[].name] tag名称
+   * @param {String} [tag[].desc] tag描述
+   * @returns {Object}
+   * @example
+   */
+  async upTag(ctx) {
+    try {
+      let id = ctx.request.body.id;
+      let params = ctx.request.body;
+      if (!id) {
+        return (ctx.body = yapi.commons.resReturn(null, 405, '项目id不能为空'));
+      }
+
+      if ((await this.checkAuth(id, 'project', 'edit')) !== true) {
+        return (ctx.body = yapi.commons.resReturn(null, 405, '没有权限'));
+      }
+
+      if (!params.tag || !Array.isArray(params.tag)) {
+        return (ctx.body = yapi.commons.resReturn(null, 405, 'tag参数格式有误'));
+      }
+
+      let projectData = await this.Model.get(id);
+      let data = {
+        up_time: yapi.commons.time()
+      };
+      data.tag = params.tag;
+
+      let result = await this.Model.up(id, data);
+      let username = this.getUsername();
+      yapi.commons.saveLog({
+        content: `<a href="/user/profile/${this.getUid()}">${username}</a> 更新了项目 <a href="/project/${id}/interface/api">${
+          projectData.name
+        }</a> 的tag`,
+        type: 'project',
+        uid: this.getUid(),
+        username: username,
+        typeid: id
+      });
+      ctx.body = yapi.commons.resReturn(result);
+    } catch (e) {
+      ctx.body = yapi.commons.resReturn(null, 402, e.message);
+    }
+  }
+
+  /**
    * 获取项目的环境变量值
    * @interface /project/get_env
    * @method GET
@@ -914,7 +972,6 @@ class projectController extends baseController {
       // }
 
       let env = await this.Model.getByEnv(project_id);
-      
 
       ctx.body = yapi.commons.resReturn(env);
     } catch (e) {
@@ -949,10 +1006,13 @@ class projectController extends baseController {
           .update(passsalt)
           .digest('hex')
           .substr(0, 20);
+
         await this.tokenModel.save({ project_id, token });
       } else {
         token = data.token;
       }
+
+      token = getToken(token, this.getUid())
 
       ctx.body = yapi.commons.resReturn(token);
     } catch (err) {
@@ -982,6 +1042,7 @@ class projectController extends baseController {
           .digest('hex')
           .substr(0, 20);
         result = await this.tokenModel.up(project_id, token);
+        token = getToken(token);
         result.token = token;
       } else {
         ctx.body = yapi.commons.resReturn(null, 402, '没有查到token信息');
@@ -1056,6 +1117,20 @@ class projectController extends baseController {
     };
 
     return (ctx.body = yapi.commons.resReturn(queryList, 0, 'ok'));
+  }
+
+  // 输入 swagger url 的时候 node 端请求数据
+  async swaggerUrl(ctx) {
+    try {
+      const { url } = ctx.request.query;
+      const { data } = await axios.get(url);
+      if (data == null || typeof data !== 'object') {
+        throw new Error('返回数据格式不是 JSON');
+      }
+      ctx.body = yapi.commons.resReturn(data);
+    } catch (err) {
+      ctx.body = yapi.commons.resReturn(null, 402, String(err));
+    }
   }
 }
 

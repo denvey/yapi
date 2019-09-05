@@ -7,9 +7,11 @@ yapi.commons = commons;
 const dbModule = require('./utils/db.js');
 yapi.connect = dbModule.connect();
 const mockServer = require('./middleware/mockServer.js');
-const plugins = require('./plugin.js');
+require('./plugin.js');
 const websockify = require('koa-websocket');
 const websocket = require('./websocket.js');
+const storageCreator = require('./utils/storage')
+require('./utils/notice')
 
 const Koa = require('koa');
 const koaStatic = require('koa-static');
@@ -17,6 +19,7 @@ const koaStatic = require('koa-static');
 const koaBody = require('koa-body');
 const router = require('./router.js');
 
+global.storageCreator = storageCreator;
 let indexFile = process.argv[2] === 'dev' ? 'dev.html' : 'index.html';
 
 const app = websockify(new Koa());
@@ -24,7 +27,7 @@ app.proxy = true;
 yapi.app = app;
 
 // app.use(bodyParser({multipart: true}));
-app.use(koaBody({ multipart: true }));
+app.use(koaBody({ multipart: true, jsonLimit: '2mb', formLimit: '1mb', textLimit: '1mb' }));
 app.use(mockServer);
 app.use(router.routes());
 app.use(router.allowedMethods());
@@ -55,5 +58,7 @@ app.use(koaStatic(yapi.path.join(yapi.WEBROOT, 'static'), { index: indexFile, gz
 
 app.listen(yapi.WEBCONFIG.port);
 commons.log(
-  `the server is start at 127.0.0.1${yapi.WEBCONFIG.port == '80' ? '' : ':' + yapi.WEBCONFIG.port}`
+  `服务已启动，请打开下面链接访问: \nhttp://127.0.0.1${
+    yapi.WEBCONFIG.port == '80' ? '' : ':' + yapi.WEBCONFIG.port
+  }/`
 );

@@ -55,18 +55,6 @@ const MenuUser = props => (
         </Menu.Item>
       );
     })}
-    {/*<Menu.Item key="0">*/}
-    {/*<Link to={`/user/profile/${props.uid}`} onClick={props.relieveLink}><Icon type="user"/>个人中心</Link>*/}
-    {/*</Menu.Item>*/}
-    {/*<Menu.Item key="1">*/}
-    {/*<Link to={`/follow`} onClick={props.relieveLink}><Icon type="star-o"/>我的关注</Link>*/}
-    {/*</Menu.Item>*/}
-    {/*{*/}
-    {/*props.role === "admin" ? <Menu.Item key="2">*/}
-    {/*<Link to={`/user/list`}><Icon type="solution"/>用户管理</Link>*/}
-    {/*</Menu.Item> : ""*/}
-    {/*}*/}
-
     <Menu.Item key="9">
       <a onClick={props.logout}>
         <Icon type="logout" />退出
@@ -98,7 +86,7 @@ const tipDoc = (
     </h3>
     <p>
       初次使用 YApi，强烈建议你阅读{' '}
-      <a target="_blank" href="https://yapi.ymfe.org" rel="noopener noreferrer">
+      <a target="_blank" href="https://hellosean1025.github.io/yapi/" rel="noopener noreferrer">
         使用文档
       </a>
       ，我们为你提供了通俗易懂的快速入门教程，更有详细的使用说明，欢迎阅读！{' '}
@@ -164,7 +152,7 @@ const ToolUser = props => {
       >
         <Tooltip placement="bottom" title={'使用文档'}>
           <li className="toolbar-li">
-            <a target="_blank" href="https://yapi.ymfe.org" rel="noopener noreferrer">
+            <a target="_blank" href="https://hellosean1025.github.io/yapi" rel="noopener noreferrer">
               <Icon className="dropdown-link" style={{ fontSize: 16 }} type="question-circle" />
             </a>
           </li>

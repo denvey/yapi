@@ -139,6 +139,16 @@ http request params, 合并了 query 和 body
 
 log（message） 函数,调试时使用，log 信息仅仅在断言失败后打印,失败断言前的信息
 
+```
+log(234)   
+assert.equal(status, 400)
+log(123)
+```
+输出结果：
+log: 234  
+AssertionError: 200 == 400
+
+
 ### 示例
 
 ```
@@ -159,3 +169,8 @@ assert.equal(status, 200)
 
 <img src="./images/autoTest.png" />
 <img src="./images/autoTestResult.png" />
+
+## 配置通用规则
+![](2019-01-15-14-05-46.png)
+
+配置通用规则能够使自动化测试，可以基于通用的规则去控制，无需手动一个一个维护case.

@@ -43,6 +43,7 @@ class InterfaceList extends Component {
     this.state = {
       visible: false,
       data: [],
+      filteredInfo: {},
       catid: null,
       total: null,
       current: 1
@@ -75,18 +76,21 @@ class InterfaceList extends Component {
       let option = {
         page: this.state.current,
         limit,
-        project_id: projectId
+        project_id: projectId,
+        status: this.state.filteredInfo.status,
+        tag: this.state.filteredInfo.tag
       };
       await this.props.fetchInterfaceList(option);
     } else if (isNaN(params.actionId)) {
       let catid = params.actionId.substr(4);
-      this.setState({ catid: +catid });
+      this.setState({catid: +catid});
       let option = {
         page: this.state.current,
         limit,
-        catid
+        catid,
+        status: this.state.filteredInfo.status,
+        tag: this.state.filteredInfo.tag
       };
-
       await this.props.fetchInterfaceCatList(option);
     }
   };
@@ -109,10 +113,13 @@ class InterfaceList extends Component {
       message.success('接口集合简介更新成功');
     });
   };
+
   handleChange = (pagination, filters, sorter) => {
     this.setState({
-      sortedInfo: sorter
-    });
+      current: pagination.current || 1,
+      sortedInfo: sorter,
+      filteredInfo: filters
+    }, () => this.handleRequest(this.props));
   };
 
   componentWillMount() {
@@ -176,16 +183,24 @@ class InterfaceList extends Component {
     }
   };
 
-  changePage = current => {
-    this.setState(
-      {
-        current: current
-      },
-      () => this.handleRequest(this.props)
-    );
-  };
+  //page change will be processed in handleChange by pagination
+  // changePage = current => {
+  //   if (this.state.current !== current) {
+  //     this.setState(
+  //       {
+  //         current: current
+  //       },
+  //       () => this.handleRequest(this.props)
+  //     );
+  //   }
+  // };
 
   render() {
+    let tag = this.props.curProject.tag;
+    let tagFilter = tag.map(item => {
+      return {text: item.name, value: item.name};
+    });
+
     const columns = [
       {
         title: '接口名称',
@@ -208,8 +223,8 @@ class InterfaceList extends Component {
         render: (item, record) => {
           const path = this.props.curProject.basepath + item;
           let methodColor =
-            variable.METHOD_COLOR[record.method ? record.method.toLowerCase() : 'get'] || variable.METHOD_COLOR['get'];
-          
+            variable.METHOD_COLOR[record.method ? record.method.toLowerCase() : 'get'] ||
+            variable.METHOD_COLOR['get'];
           return (
             <div>
               <span
@@ -232,12 +247,12 @@ class InterfaceList extends Component {
         title: '接口分类',
         dataIndex: 'catid',
         key: 'catid',
-        width: 18,
+        width: 28,
         render: (item, record) => {
           return (
             <Select
               value={item + ''}
-              className="select"
+              className="select path"
               onChange={catid => this.changeInterfaceCat(record._id, catid)}
             >
               {this.props.catList.map(cat => {
@@ -255,10 +270,10 @@ class InterfaceList extends Component {
         title: '状态',
         dataIndex: 'status',
         key: 'status',
-        width: 14,
+        width: 24,
         render: (text, record) => {
           const key = record.key;
-          return ( 
+          return (
             <Select
               value={key + '-' + text}
               className="select"
@@ -284,6 +299,20 @@ class InterfaceList extends Component {
           }
         ],
         onFilter: (value, record) => record.status.indexOf(value) === 0
+      },
+      {
+        title: 'tag',
+        dataIndex: 'tag',
+        key: 'tag',
+        width: 14,
+        render: text => {
+          let textMsg = text.length > 0 ? text.join('\n') : '未设置';
+          return <div className="table-desc">{textMsg}</div>;
+        },
+        filters: tagFilter,
+        onFilter: (value, record) => {
+          return record.tag.indexOf(value) >= 0;
+        }
       }
     ];
     let intername = '',
@@ -322,11 +351,13 @@ class InterfaceList extends Component {
     const pageConfig = {
       total: total,
       pageSize: limit,
-      current: this.state.current,
-      onChange: this.changePage
+      current: this.state.current
+      // onChange: this.changePage
     };
 
     const isDisabled = this.props.catList.length === 0;
+
+    // console.log(this.props.curProject.tag)
 
     return (
       <div style={{ padding: '24px' }}>
